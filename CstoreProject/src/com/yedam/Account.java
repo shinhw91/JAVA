@@ -24,7 +24,7 @@ public class Account {
 	
 	// 메소드
 	void showInfo() {
-		System.out.printf("%-18s %-18s %-18s\n", accountCode, accountName, accountGrade);
+		System.out.printf(" %-18s %-18s %-18s\n", accountCode, accountName, accountGrade);
 	}
 	
 

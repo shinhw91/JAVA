@@ -14,12 +14,28 @@ public class AccountDAO {
 	PreparedStatement psmt;
 	ResultSet rs;
 	
+	// 연결접속 해제
+	void disconn() {
+		try {
+			if(conn != null)
+				conn.close();
+			if(psmt != null)
+				psmt.close();
+			if(rs != null)
+				rs.close();
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	Connection getConn() {
 		String url = "jdbc:oracle:thin:@localhost:1521:xe";
 		try {
 			Class.forName("oracle.jdbc.OracleDriver");
 			conn = DriverManager.getConnection(url, "dev", "dev");
 //			System.out.println("연결성공!");
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -36,13 +52,15 @@ public class AccountDAO {
 			psmt.setString(1, accountCode);
 			psmt.setString(2, accountPw);
 			
-			int r = psmt.executeUpdate();
-			if(r > 0) {
+			rs = psmt.executeQuery();
+			if(rs.next()) {
 				return true;
 			}
-			
+		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
@@ -66,6 +84,8 @@ public class AccountDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
@@ -87,6 +107,8 @@ public class AccountDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
@@ -112,6 +134,8 @@ public class AccountDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return accounts;
 	}
@@ -133,6 +157,8 @@ public class AccountDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}

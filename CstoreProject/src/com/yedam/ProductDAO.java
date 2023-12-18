@@ -14,6 +14,21 @@ public class ProductDAO {
 	PreparedStatement psmt;
 	ResultSet rs;
 	
+	// 연결접속 해제
+	void disconn() {
+		try {
+			if(conn != null)
+				conn.close();
+			if(psmt != null)
+				psmt.close();
+			if(rs != null)
+				rs.close();
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	Connection getConn() {
 		String url = "jdbc:oracle:thin:@localhost:1521:xe";
 		try {
@@ -23,9 +38,10 @@ public class ProductDAO {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		} 
 		return conn;
 	}
+	
 	
 	// ***************************************************** 1.상품관리
 	// 상품등록
@@ -45,6 +61,8 @@ public class ProductDAO {
 		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
@@ -66,6 +84,8 @@ public class ProductDAO {
 		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
@@ -89,6 +109,8 @@ public class ProductDAO {
 		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return null;
 	}
@@ -114,6 +136,8 @@ public class ProductDAO {
 		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return products;
 	}
@@ -134,12 +158,37 @@ public class ProductDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
 	
 
 	// ***************************************************** 2.상품입고
+	// 거래번호 확인
+		int confirmNumber() {
+			getConn();
+			int historyNumber = 0;
+			String sql = "select max(history_number) from history";
+			try {
+				psmt = conn.prepareStatement(sql);
+				
+				rs = psmt.executeQuery();
+				if(rs.next()) {
+					historyNumber = rs.getInt("max(history_number)");
+					return historyNumber;
+				}
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				disconn();
+			}
+			return historyNumber;
+		}
+	
+	
 	// 상품등록 확인
 	boolean confirmProduct(String productCode) {
 		getConn();
@@ -155,36 +204,17 @@ public class ProductDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
-//	
-//	
-//	// 상품입고 (기 등록)
-//	boolean enterProduct(String productCode, String productEnterDate, int productCount) {
-//		getConn();
-//		String sql = "update product set product_enterdate = ?, product_count = ? where product_code = ?";
-//		try {
-//			psmt = conn.prepareStatement(sql);
-//			psmt.setString(1, productEnterDate);
-//			psmt.setInt(2, productCount);
-//			psmt.setString(3, productCode);
-//			
-//			int r = psmt.executeUpdate();
-//			if(r > 0) {
-//				return true;
-//			}
-//			
-//		} catch (SQLException e) {
-//			e.printStackTrace();
-//		}
-//		return false;
-//	}
+
 	
 	// 내역 테이블
-	boolean enterProduct(int historyNumber, String historyDate, String productCode, int productCount, String historySort) {
+	boolean enterProduct(int historyNumber, String historyDate, String productCode, int productCount, String historySort, String saleSort) {
 		getConn();
-		String sql = "insert into history(history_number, history_date, product_code, product_count, history_sort) values (?, ?, ?, ?, ?)";
+		String sql = "insert into history(history_number, history_date, product_code, product_count, history_sort, sale_sort) values (?, ?, ?, ?, ?, ?)";
 		try {
 			psmt = conn.prepareStatement(sql);
 			psmt.setInt(1, historyNumber);
@@ -192,6 +222,8 @@ public class ProductDAO {
 			psmt.setString(3, productCode);
 			psmt.setInt(4, productCount);
 			psmt.setString(5, historySort);
+			psmt.setString(6, saleSort);
+			
 
 			int r = psmt.executeUpdate();
 			if(r > 0) {
@@ -200,6 +232,8 @@ public class ProductDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
@@ -223,6 +257,8 @@ public class ProductDAO {
 		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return remain;
 	}
@@ -238,22 +274,47 @@ public class ProductDAO {
 			psmt.setString(2, productCode);
 			
 			int r = psmt.executeUpdate();
-	
+			if(r > 0) {
+				return true;
+			}
 		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
-	
-	
 
 	
 	
 	
-	
-	
 	// ***************************************************** 3.상품판매
+	// 상품가격 확인
+	int confirmPrice(String productCode) {
+		getConn();
+		int price = 0;
+		String sql = "select product_price from product where product_code = ?";
+		
+		try {
+			psmt = conn.prepareStatement(sql);
+			psmt.setString(1, productCode);
+			
+			rs = psmt.executeQuery();
+			if(rs.next()) {
+				price = rs.getInt("product_price");
+				return price;
+			}
+		
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			disconn();
+		}
+		return price;
+	}
+	
+	
 	// 내역 테이블
 	boolean outProduct(int historyNumber, String historyDate, String productCode, int productCount, int saleIncome, String sale_sort, String historySort) {
 		getConn();
@@ -275,6 +336,8 @@ public class ProductDAO {
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
 		return false;
 	}
@@ -282,31 +345,168 @@ public class ProductDAO {
 	
 	
 	
-	
-	
-	// 상품가격 확인
-	int confirmPrice(String productCode) {
+	// ***************************************************** 4.내역확인
+	// 입고내역
+	List<Product> enterList(){
 		getConn();
-		int price = 0;
-		String sql = "select product_price from product where product_code = ?";
+		List<Product> products = new ArrayList<Product>();
+		String sql = "SELECT h.history_number, h.history_date, h.product_code, p.product_name, p.product_price, h.product_count, h.history_sort\r\n"
+				+ "from product p, history h\r\n"
+				+ "where p.product_code = h.product_code\r\n"
+				+ "and h.history_sort = '입고'\r\n"
+				+ "order by 1";
 		
 		try {
 			psmt = conn.prepareStatement(sql);
-			psmt.setString(1, productCode);
+			rs = psmt.executeQuery();
+			while(rs.next()) {
+				Product product = new Product();
+				product.setHistoryNumber(rs.getInt("history_number"));
+				product.setHistoryDate(rs.getString("history_date"));
+				product.setProductCode(rs.getString("product_code"));
+				product.setProductName(rs.getString("product_name"));
+				product.setProductPrice(rs.getInt("product_price"));
+				product.setProductCount(rs.getInt("product_count"));
+				product.setHistorySort(rs.getString("history_sort"));
+				
+				products.add(product);
+			}
 			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			disconn();
+		}
+		return products;
+	}
+	
+	
+	// 판매내역
+		List<Product> outList(){
+			getConn();
+			List<Product> products = new ArrayList<Product>();
+			String sql = "SELECT h.history_number, h.history_date, h.product_code, p.product_name, p.product_price, h.product_count, h.sale_income, h.sale_sort, h.history_sort\r\n"
+					+ "from product p, history h\r\n"
+					+ "where p.product_code = h.product_code\r\n"
+					+ "and h.history_sort = '판매'\r\n"
+					+ "order by 1";
+			
+			try {
+				psmt = conn.prepareStatement(sql);
+				rs = psmt.executeQuery();
+				while(rs.next()) {
+					Product product = new Product();
+					product.setHistoryNumber(rs.getInt("history_number"));
+					product.setHistoryDate(rs.getString("history_date"));
+					product.setProductCode(rs.getString("product_code"));
+					product.setProductName(rs.getString("product_name"));
+					product.setProductPrice(rs.getInt("product_price"));
+					product.setProductCount(rs.getInt("product_count"));
+					product.setSaleIncome(rs.getInt("sale_income"));
+					product.setSaleSort(rs.getString("sale_sort"));
+					product.setHistorySort(rs.getString("history_sort"));
+					
+					products.add(product);
+				}
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				disconn();
+			}
+			return products;
+		}
+		
+		
+		// 전체내역
+		List<Product> fullList(){
+			getConn();
+			List<Product> products = new ArrayList<Product>();
+			String sql = "SELECT h.history_number, h.history_date, h.product_code, p.product_name, p.product_price, h.product_count, h.sale_income, h.sale_sort, h.history_sort\r\n"
+					+ "from product p, history h\r\n"
+					+ "where p.product_code = h.product_code\r\n"
+					+ "order by 1";
+			
+			try {
+				psmt = conn.prepareStatement(sql);
+				rs = psmt.executeQuery();
+				while(rs.next()) {
+					Product product = new Product();
+					product.setHistoryNumber(rs.getInt("history_number"));
+					product.setHistoryDate(rs.getString("history_date"));
+					product.setProductCode(rs.getString("product_code"));
+					product.setProductName(rs.getString("product_name"));
+					product.setProductPrice(rs.getInt("product_price"));
+					product.setProductCount(rs.getInt("product_count"));
+					product.setSaleIncome(rs.getInt("sale_income"));
+					product.setSaleSort(rs.getString("sale_sort"));
+					product.setHistorySort(rs.getString("history_sort"));
+					
+					products.add(product);
+				}
+				
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				disconn();
+			}
+			return products;
+		}
+	
+		
+		
+		
+	// ***************************************************** 5.재고확인	
+	// 재고확인
+	Product getRemain(String productCode) {
+		getConn();
+		String sql = "select * from product where product_code = ?";
+		try {
+			psmt = conn.prepareStatement(sql);
+			psmt.setString(1, productCode);
 			rs = psmt.executeQuery();
 			if(rs.next()) {
-				price = rs.getInt("product_price");
-				return price;
+				Product product = new Product();
+				product.setProductCode(rs.getString("product_code"));
+				product.setProductName(rs.getString("product_name"));
+				product.setProductRemain(rs.getInt("product_remain"));
+				return product;
 			}
 		
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			disconn();
 		}
-		return price;
+		return null;
 	}
-	
-	
+		
+		
+	// 재고목록
+	List<Product> remainList() {
+		getConn();
+		List<Product> products = new ArrayList<Product>();
+		String sql = "select * from product order by 1";
+		
+		try {
+			psmt = conn.prepareStatement(sql);
+			rs = psmt.executeQuery();
+			while(rs.next()) {
+				Product product = new Product();
+				product.setProductCode(rs.getString("product_code"));
+				product.setProductName(rs.getString("product_name"));
+				product.setProductRemain(rs.getInt("product_remain"));
+				
+				products.add(product);
+			}
+		
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			disconn();
+		}
+		return products;
+	}
 	
 	
 	
